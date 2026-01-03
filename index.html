@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏔️ Afghan Tetris Adventure 🏔️</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #4a90e2, #7b68ee, #ff6b6b);
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 5px solid #ff6b6b;
+        }
+
+        .game-board {
+            position: relative;
+            border: 4px solid #4a90e2;
+            border-radius: 15px;
+            background: #1a1a2e;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(74, 144, 226, 0.5);
+        }
+
+        .game-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 28px;
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-panel {
+            background: linear-gradient(135deg, #4a90e2, #7b68ee);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            min-width: 200px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .score {
+            font-size: 24px;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .next-piece {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid #ff6b6b;
+        }
+
+        .controls {
+            background: #ffd93d;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: #333;
+            font-weight: bold;
+            border: 3px solid #ff6b6b;
+        }
+
+        .controls h3 {
+            margin: 0 0 15px 0;
+            color: #ff6b6b;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 5px solid #ff6b6b;
+            z-index: 100;
+            display: none;
+            animation: bounce 0.5s ease-out;
+        }
+
+        @keyframes bounce {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .celebration {
+            position: absolute;
+            font-size: 30px;
+            pointer-events: none;
+            animation: celebrate 1s ease-out forwards;
+        }
+
+        @keyframes celebrate {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        canvas {
+            display: block;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                padding: 20px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div>
+            <h1 class="title">🏔️ Afghan Tetris Adventure 🏔️</h1>
+            <div class="game-board">
+                <canvas id="gameCanvas" width="300" height="600"></canvas>
+                <div id="gameOver" class="game-over">
+                    <h2>🎮 Game Over! 🎮</h2>
+                    <p>Great job playing Afghan Tetris!</p>
+                    <button class="btn" onclick="startNewGame()">🔄 Play Again!</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-info">
+            <div class="score-panel">
+                <div class="score">🏆 Score: <span id="score">0</span></div>
+                <div class="score">📊 Lines: <span id="lines">0</span></div>
+                <div class="score">⚡ Level: <span id="level">1</span></div>
+            </div>
+
+            <div class="next-piece">
+                <h3>🔮 Next Piece:</h3>
+                <canvas id="nextCanvas" width="120" height="120"></canvas>
+            </div>
+
+            <div class="controls">
+                <h3>🎯 Controls:</h3>
+                <div>⬅️➡️ Move</div>
+                <div>⬇️ Soft Drop</div>
+                <div>⬆️ Rotate</div>
+                <div>SPACE Hard Drop</div>
+                <button class="btn" onclick="togglePause()">⏸️ Pause</button>
+                <button class="btn" onclick="startNewGame()">🔄 New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Afghan-themed Tetris game for kids!
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+
+        // Game constants
+        const BLOCK_SIZE = 30;
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 20;
+
+        // Afghan-inspired colors for tetris pieces
+        const COLORS = [
+            '#ff4757', // Red (Afghan flag)
+            '#2ed573', // Green (Afghan flag) 
+            '#1e3799', // Blue (beautiful Afghan lapis lazuli)
+            '#ffa502', // Orange (Afghan sunset)
+            '#ff6348', // Coral (Afghan jewelry)
+            '#7b68ee', // Purple (Afghan amethyst)
+            '#ffd93d'  // Yellow (Afghan gold)
+        ];
+
+        // Tetris piece shapes
+        const PIECES = [
+            // I piece - like a minaret!
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0]
+            ],
+            // O piece - like a beautiful Afghan window!
+            [
+                [2, 2],
+                [2, 2]
+            ],
+            // T piece - like a traditional Afghan cross!
+            [
+                [0, 3, 0],
+                [3, 3, 3],
+                [0, 0, 0]
+            ],
+            // S piece - like a flowing Afghan carpet pattern!
+            [
+                [0, 4, 4],
+                [4, 4, 0],
+                [0, 0, 0]
+            ],
+            // Z piece - like zigzag Afghan embroidery!
+            [
+                [5, 5, 0],
+                [0, 5, 5],
+                [0, 0, 0]
+            ],
+            // J piece - like a beautiful Afghan hook!
+            [
+                [6, 0, 0],
+                [6, 6, 6],
+                [0, 0, 0]
+            ],
+            // L piece - like an Afghan letter!
+            [
+                [0, 0, 7],
+                [7, 7, 7],
+                [0, 0, 0]
+            ]
+        ];
+
+        // Game state
+        let board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
+        let currentPiece = null;
+        let currentX = 0;
+        let currentY = 0;
+        let nextPiece = null;
+        let score = 0;
+        let lines = 0;
+        let level = 1;
+        let dropTimer = 0;
+        let dropInterval = 500; // milliseconds
+        let lastTime = 0;
+        let gameRunning = true;
+        let paused = false;
+
+        // Initialize game
+        function init() {
+            generateNewPiece();
+            generateNextPiece();
+            gameLoop(0);
+
+            // Add keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function generateNewPiece() {
+            if (nextPiece) {
+                currentPiece = nextPiece;
+            } else {
+                currentPiece = PIECES[Math.floor(Math.random() * PIECES.length)];
+            }
+            currentX = Math.floor(BOARD_WIDTH / 2) - Math.floor(currentPiece[0].length / 2);
+            currentY = 0;
+
+            // Check if game is over
+            if (isColliding()) {
+                endGame();
+            }
+        }
+
+        function generateNextPiece() {
+            nextPiece = PIECES[Math.floor(Math.random() * PIECES.length)];
+            drawNextPiece();
+        }
+
+        function drawNextPiece() {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+            if (!nextPiece) return;
+
+            const offsetX = (nextCanvas.width - nextPiece[0].length * 20) / 2;
+            const offsetY = (nextCanvas.height - nextPiece.length * 20) / 2;
+
+            for (let y = 0; y < nextPiece.length; y++) {
+                for (let x = 0; x < nextPiece[y].length; x++) {
+                    if (nextPiece[y][x] !== 0) {
+                        const color = COLORS[nextPiece[y][x] - 1];
+                        nextCtx.fillStyle = color;
+                        nextCtx.fillRect(offsetX + x * 20, offsetY + y * 20, 18, 18);
+
+                        // Add shiny effect
+                        nextCtx.fillStyle = 'rgba(255,255,255,0.3)';
+                        nextCtx.fillRect(offsetX + x * 20, offsetY + y * 20, 9, 9);
+                    }
+                }
+            }
+        }
+
+        function isColliding(piece = currentPiece, x = currentX, y = currentY) {
+            for (let py = 0; py < piece.length; py++) {
+                for (let px = 0; px < piece[py].length; px++) {
+                    if (piece[py][px] !== 0) {
+                        const newX = x + px;
+                        const newY = y + py;
+
+                        if (newX < 0 || newX >= BOARD_WIDTH ||
+                            newY >= BOARD_HEIGHT ||
+                            (newY >= 0 && board[newY][newX] !== 0)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rotatePiece() {
+            const rotated = [];
+            for (let x = 0; x < currentPiece[0].length; x++) {
+                rotated[x] = [];
+                for (let y = currentPiece.length - 1; y >= 0; y--) {
+                    rotated[x][currentPiece.length - 1 - y] = currentPiece[y][x];
+                }
+            }
+
+            if (!isColliding(rotated)) {
+                currentPiece = rotated;
+            }
+        }
+
+        function lockPiece() {
+            for (let y = 0; y < currentPiece.length; y++) {
+                for (let x = 0; x < currentPiece[y].length; x++) {
+                    if (currentPiece[y][x] !== 0) {
+                        board[currentY + y][currentX + x] = currentPiece[y][x];
+                    }
+                }
+            }
+
+            clearLines();
+            generateNewPiece();
+            generateNextPiece();
+        }
+
+        function clearLines() {
+            let linesCleared = 0;
+
+            for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
+                if (board[y].every(cell => cell !== 0)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(BOARD_WIDTH).fill(0));
+                    linesCleared++;
+                    y++; // Check the same line again
+
+                    // Add celebration effect
+                    addCelebration();
+                }
+            }
+
+            if (linesCleared > 0) {
+                lines += linesCleared;
+                score += linesCleared * 100 * level;
+                level = Math.floor(lines / 10) + 1;
+                dropInterval = Math.max(50, 500 - (level - 1) * 50);
+
+                updateScore();
+            }
+        }
+
+        function addCelebration() {
+            const celebration = document.createElement('div');
+            celebration.className = 'celebration';
+            celebration.textContent = '🎉✨🏔️✨🎉';
+            celebration.style.left = Math.random() * 80 + 10 + '%';
+            celebration.style.top = '50%';
+            document.body.appendChild(celebration);
+
+            setTimeout(() => {
+                document.body.removeChild(celebration);
+            }, 1000);
+        }
+
+        function handleKeyPress(event) {
+            if (!gameRunning || paused) return;
+
+            switch (event.code) {
+                case 'ArrowLeft':
+                    if (!isColliding(currentPiece, currentX - 1, currentY)) {
+                        currentX--;
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (!isColliding(currentPiece, currentX + 1, currentY)) {
+                        currentX++;
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (!isColliding(currentPiece, currentX, currentY + 1)) {
+                        currentY++;
+                        score++;
+                        updateScore();
+                    }
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    break;
+                case 'Space':
+                    // Hard drop
+                    while (!isColliding(currentPiece, currentX, currentY + 1)) {
+                        currentY++;
+                        score += 2;
+                    }
+                    lockPiece();
+                    updateScore();
+                    break;
+            }
+            event.preventDefault();
+        }
+
+        function draw() {
+            // Clear canvas with beautiful Afghan-inspired gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw board
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (board[y][x] !== 0) {
+                        const color = COLORS[board[y][x] - 1];
+                        drawBlock(x * BLOCK_SIZE, y * BLOCK_SIZE, color);
+                    }
+                }
+            }
+
+            // Draw current piece
+            if (currentPiece) {
+                for (let y = 0; y < currentPiece.length; y++) {
+                    for (let x = 0; x < currentPiece[y].length; x++) {
+                        if (currentPiece[y][x] !== 0) {
+                            const color = COLORS[currentPiece[y][x] - 1];
+                            drawBlock((currentX + x) * BLOCK_SIZE, (currentY + y) * BLOCK_SIZE, color);
+                        }
+                    }
+                }
+            }
+
+            // Draw beautiful grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= BOARD_WIDTH; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * BLOCK_SIZE, 0);
+                ctx.lineTo(x * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= BOARD_HEIGHT; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, y * BLOCK_SIZE);
+                ctx.stroke();
+            }
+        }
+
+        function drawBlock(x, y, color) {
+            // Main block
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+
+            // Highlight for 3D effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillRect(x, y, BLOCK_SIZE - 1, 3);
+            ctx.fillRect(x, y, 3, BLOCK_SIZE - 1);
+
+            // Shadow for 3D effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(x + BLOCK_SIZE - 4, y + 3, 3, BLOCK_SIZE - 4);
+            ctx.fillRect(x + 3, y + BLOCK_SIZE - 4, BLOCK_SIZE - 4, 3);
+        }
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            if (!paused) {
+                dropTimer += deltaTime;
+
+                if (dropTimer >= dropInterval) {
+                    if (!isColliding(currentPiece, currentX, currentY + 1)) {
+                        currentY++;
+                    } else {
+                        lockPiece();
+                    }
+                    dropTimer = 0;
+                }
+            }
+
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lines').textContent = lines;
+            document.getElementById('level').textContent = level;
+        }
+
+        function togglePause() {
+            paused = !paused;
+            const btn = event.target;
+            btn.textContent = paused ? '▶️ Resume' : '⏸️ Pause';
+        }
+
+        function startNewGame() {
+            // Reset game state
+            board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
+            score = 0;
+            lines = 0;
+            level = 1;
+            dropInterval = 500;
+            dropTimer = 0;
+            gameRunning = true;
+            paused = false;
+
+            document.getElementById('gameOver').style.display = 'none';
+            document.querySelector('.controls button').textContent = '⏸️ Pause';
+
+            updateScore();
+            generateNewPiece();
+            generateNextPiece();
+        }
+
+        function endGame() {
+            gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+
+            // Add final celebration
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => addCelebration(), i * 200);
+            }
+        }
+
+        // Start the game!
+        init();
+    </script>
+</body>
+
+</html>
